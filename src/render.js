@@ -4,6 +4,7 @@ const recordedChunks = [];
 // Writing buffer to file system
 const {writeFile} = require('fs');
 
+// Remote allows access to node modules
 const { desktopCapturer, remote } = require('electron');
 const {Menu} = remote;
 
@@ -30,14 +31,13 @@ stopButton.onclick = e => {
 const videoSelectButton = document.querySelector('#vidSelectBtn');
 videoSelectButton.onclick = getVideoSources;
 
-
-
-// Ge
+// Get all available sources to stream user media
 async function getVideoSources(){
     const inputSources = await desktopCapturer.getSources({
         types: ['window', 'screen']
     });
 
+    // Creates option menu for each source
     const videoOptionsMenu = Menu.buildFromTemplate(
         inputSources.map(source => {
             return {
@@ -49,8 +49,6 @@ async function getVideoSources(){
 
     videoOptionsMenu.popup();
 }
-
-
 
 
 async function selectSource(source){
@@ -67,6 +65,7 @@ async function selectSource(source){
         }
     };
 
+    // Constructs record stream and sets source as stream
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
     videoElement.srcObject = stream;
@@ -76,9 +75,10 @@ async function selectSource(source){
     const options = {mimeType: 'video/webm; codecs=vp9'};
     mediaRecorder = new MediaRecorder(stream, options);
 
+    // Fires off when new data objects move in from stream
     mediaRecorder.ondataavailable = HandleDataAvailable;
+    // When stream stops
     mediaRecorder.onstop = HandleStop;
-    
 } 
 
 function HandleDataAvailable(e){
@@ -89,10 +89,13 @@ function HandleDataAvailable(e){
 
 
 async function HandleStop(e){
+    // Constructs binary large object from recorded chunks
     const blob = new Blob(recordedChunks, {
         type: "video/webm; codecs=vp9"
     });
 
+    // Buffer - Temporary storage space in memory
+    // Temporarily stores in memory
     const buffer = Buffer.from(await blob.arrayBuffer());
 
     const {filePath} = await dialog.showSaveDialog({
@@ -100,6 +103,7 @@ async function HandleStop(e){
         defaultPath: `vid-${Date.now()}.webm`
     });
 
+    // Writes to file path from buffer in memory
     writeFile(filePath, buffer, ()=> console.log("Saved"));
 }
 
